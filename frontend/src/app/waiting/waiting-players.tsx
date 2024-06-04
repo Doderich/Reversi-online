@@ -13,9 +13,10 @@ export default function WaitingPlayers({ url }: { url: string }) {
   const router = useRouter();
 
   useEffect(() => {
-    const socket = io(url);
+    const socket = io(url, {
+      path: "/live/reversi-server/",
+    });
     socket.emit("waiting");
-    console.log(process.env.NEXT_PUBLIC_WEBSOCKET_URL);
 
     // Listen for incoming messages
     socket.on(

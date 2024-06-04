@@ -23,7 +23,9 @@ export default function WebsocketWrapper({
   gameId: string;
   url: string;
 }) {
-  const socket = io(url);
+  const socket = io(url, {
+    path: "/live/reversi-server/",
+  });
   const [game, setGame] = useState<Game>({
     game_id: "",
     players: [],

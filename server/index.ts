@@ -1,3 +1,4 @@
+import path from "path";
 import { GameState, resetBoard, skipTurn, SquareState, updateBoard } from "./lib/reversi-logic";
 
 // server/server.js
@@ -13,6 +14,7 @@ const games: {game_id: string; players:{id: string; color: string;}[]; scores: {
 
 const { Server } = require('socket.io');
 const io = new Server(server,{
+    path: '/live/reversi-server',
     cors: {
     origin: '*',
     methods: ["GET", "POST"]
