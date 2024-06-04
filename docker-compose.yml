@@ -1,0 +1,18 @@
+services:
+  backend:
+    build:
+      context: server
+    image: reversi-websocket-server:latest
+    ports:
+      - 4000:4000
+   
+  frontend:
+    build:
+      context: frontend
+    image: reversi-frontend:latest
+    environment:
+      - NEXT_PUBLIC_WEBSOCKET_URL=http://backend:4000
+    ports:
+      - 3000:3000
+    depends_on:
+      - backend

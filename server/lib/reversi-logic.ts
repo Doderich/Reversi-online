@@ -1,8 +1,3 @@
-"use client";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { useEffect, useState } from "react";
-
 enum SquareState {
     Empty,
     Black,
@@ -11,6 +6,7 @@ enum SquareState {
 }
 
 enum GameState {
+    Init = 'Init',
     BlackTurn = 'Black Turn',
     WhiteTurn = 'White Turn',
     BlackWin = 'Black Win',
@@ -18,17 +14,7 @@ enum GameState {
     Draw= 'Draw'
 }
 
-export default function Board() {
-    const [board, setBoard] = useState<SquareState[][]>(Array(8).fill(Array(8).fill(SquareState.Empty)));
-    const [gameState, setGameState] = useState<GameState>(GameState.BlackTurn);
-    const [currentlegalMoves, setCurrentLegalMoves] = useState<{x: number, y: number}[]>([]);
-    const [scores, setScores] = useState<{black: number, white: number}>({black: 0, white: 0});
-
-    useEffect(() => {
-        resetBoard();
-    }, []);
-
-    const updateBoard = ({x, y}: {x: number, y: number}) => {
+const updateBoard = ({board,gameState,currentlegalMoves,x, y}: {board: SquareState[][], gameState: GameState; currentlegalMoves:{x:number; y:number}[];  x: number, y: number}) => {
         if (board[y][x] !== SquareState.Empty && board[y][x] !== SquareState.Preview) return;
         if (gameState === GameState.BlackWin || gameState === GameState.WhiteWin || gameState === GameState.Draw) return;
         if(!currentlegalMoves.some(move => move.x === x && move.y === y)) return;
@@ -43,15 +29,15 @@ export default function Board() {
             newBoard = flipPieces(newBoard, x, y, dx, dy, player);
         });
 
-        const newGameState = checkState(newBoard);
-        setScores({black: newGameState.black, white: newGameState.white});
-
+        const newGameState = checkState({board:newBoard, gameState});
         const legalMoves = getLegalMoves(newBoard, newGameState.state);
         const highlightedBoard = highlightLegalMoves(newBoard, legalMoves);
-
-        setCurrentLegalMoves(legalMoves);
-        setBoard(highlightedBoard);
-        setGameState(newGameState.state);
+        return {
+            gameState:newGameState,
+            legalMoves,
+            scores: {black: newGameState.black, white: newGameState.white},
+            board: highlightedBoard
+        }
     };
 
     const resetBoard = () => {
@@ -63,19 +49,24 @@ export default function Board() {
 
         const legalMoves = getLegalMoves(newBoard, GameState.BlackTurn);
         const highlightedBoard = highlightLegalMoves(newBoard, legalMoves);
-        setCurrentLegalMoves(legalMoves);
-        setBoard(highlightedBoard);
-        setGameState(GameState.BlackTurn);
+        
+        return {
+            legalMoves,
+            board: highlightedBoard,
+            gameState: GameState.BlackTurn
+        }
     };
 
-    const skipTurn = () => {
+    const skipTurn = ({gameState, board}: {gameState: GameState, board: SquareState[][]}) => {
         const newGameState = gameState === GameState.BlackTurn ? GameState.WhiteTurn : GameState.BlackTurn;
         const legalMoves = getLegalMoves(board, newGameState);
         const highlightedBoard = highlightLegalMoves(board, legalMoves);
-
-        setCurrentLegalMoves(legalMoves);
-        setBoard(highlightedBoard);
-        setGameState(newGameState);
+       
+        return {
+            legalMoves,
+            board: highlightedBoard,
+            gameState: newGameState
+        }
     };
 
    const getLegalMoves = (board: SquareState[][], gameState: GameState): {x: number, y: number}[] => {
@@ -148,7 +139,7 @@ export default function Board() {
         return newBoard;
     };
 
-    const checkState = (board: SquareState[][]): {state: GameState, black: number, white: number} => {
+    const checkState = ({board, gameState}: {board: SquareState[][], gameState: GameState}): {state: GameState, black: number, white: number} => {
         let black = 0;
         let white = 0;
         let currentState: GameState;
@@ -175,43 +166,14 @@ export default function Board() {
         return {state: currentState, black: black, white: white};
     };
 
-    return (
-        <div className="w-full h-full flex flex-col items-center justify-center">
-            <span className=" text-4xl">Board</span>
-            <span className="text-2xl">Black: {scores.black}</span>
-            <span className="text-2xl">White: {scores.white}</span>
-            <div className="grid grid-cols-1 w-fit gap-2 grid-rows-8 bg-blue-300">
-                {board.map((row, row_index) => (
-                    <div key={row_index} className="grid gap-2 grid-cols-8">
-                        {row.map((col, col_index) => (
-                            <Square updateBoard={() => updateBoard({x: col_index, y: row_index})} state={col} key={col_index} />
-                        ))}
-                    </div>
-                ))}
-            </div>
-            <span className="text-2xl">{gameState}</span>
-            <div className=" flex justify-evenly w-full">
-
-            <Button variant={"secondary"} onClick={skipTurn}>Skip Turn</Button>
-            <Button onClick={resetBoard}>Reset</Button>
-            </div>
-        </div>
-    );
-}
-
-export function Square({updateBoard, state}: {updateBoard: () => void; state: SquareState}) {
-    const getSquareColor = () => {
-        switch (state) {
-            case SquareState.Black:
-                return "bg-black";
-            case SquareState.White:
-                return "bg-white";
-            case SquareState.Preview:
-                return "bg-green-500";
-            default:
-                return "bg-gray-500";
-        }
-    };
-
-    return <span onClick={updateBoard} className={cn("w-12 h-12", getSquareColor())}></span>;
+export {
+    SquareState,
+    GameState,
+    updateBoard,
+    resetBoard,
+    skipTurn,
+    getLegalMoves,
+    highlightLegalMoves,
+    flipPieces,
+    checkState
 }
