@@ -1,9 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { socket } from "@/socket";
 import { useEffect, useState } from "react";
 import HollowBoard, { GameState, SquareState } from "./hollow-board";
+import { io } from "socket.io-client";
 
 type Game = {
   game_id: string;
@@ -16,7 +16,14 @@ type Game = {
   };
 };
 
-export default function WebsocketWrapper({ gameId }: { gameId: string }) {
+export default function WebsocketWrapper({
+  gameId,
+  url,
+}: {
+  gameId: string;
+  url: string;
+}) {
+  const socket = io(url);
   const [game, setGame] = useState<Game>({
     game_id: "",
     players: [],
