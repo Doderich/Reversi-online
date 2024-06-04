@@ -1,4 +1,5 @@
 "use client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
@@ -7,21 +8,32 @@ import { io } from "socket.io-client";
 
 export default function WaitingPlayers({ url }: { url: string }) {
   //@ts-ignore
-  const [waitingPlayers, setWaitingPlayers] = useState<string[]>([]);
+  const [waitingPlayers, setWaitingPlayers] = useState<
+    { id: string; username: string }[]
+  >([]);
   const [openMatchFoundDialog, setOpenMatchFoundDialog] = useState(false);
   const [game, setGame] = useState({ game_id: "" });
+  const [socketId, setSocketId] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     const socket = io(url, {
       path: "/live/reversi-server/",
     });
-    socket.emit("waiting");
+    if (!localStorage.getItem("username")) {
+      router.push("/");
+    }
+    socket.emit("waiting", { username: localStorage.getItem("username") });
 
+    setSocketId(socket.id);
     // Listen for incoming messages
     socket.on(
       "waiting players",
-      ({ waitingPlayers }: { waitingPlayers: string[] }) => {
+      ({
+        waitingPlayers,
+      }: {
+        waitingPlayers: { id: string; username: string }[];
+      }) => {
         // Add type annotation for waitingPlayers parameter
         console.log(waitingPlayers);
         setWaitingPlayers(waitingPlayers);
@@ -29,15 +41,14 @@ export default function WaitingPlayers({ url }: { url: string }) {
     );
 
     socket.on("match found", ({ game_id }: { game_id: string }) => {
+      console.log("Match found", game_id);
       setOpenMatchFoundDialog(true);
       setGame({ game_id });
-      console.log("Match found");
     });
   }, []);
 
   return (
     <div>
-      <h1>Real-Time Chat</h1>
       <Dialog
         open={openMatchFoundDialog}
         onOpenChange={setOpenMatchFoundDialog}
@@ -52,7 +63,15 @@ export default function WaitingPlayers({ url }: { url: string }) {
       </Dialog>
       <div>
         {waitingPlayers.map((player, index) => (
-          <div key={index}>{player}</div>
+          <div key={player.id} className="flex gap-2 justify-center">
+            <Avatar>
+              <AvatarImage src="https://github.com/shadcn.png" />
+              <AvatarFallback>CN</AvatarFallback>
+            </Avatar>
+            <span className={player.id === socketId ? "font-bold" : ""}>
+              {player.username}
+            </span>
+          </div>
         ))}
       </div>
     </div>
